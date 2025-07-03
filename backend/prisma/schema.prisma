@@ -1,0 +1,147 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  email        String   @unique
+  senha        String
+}
+
+enum KitStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SendStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum KitOrigin {
+  DEPARTMENT
+  ROLE
+  MANUAL
+}
+
+model Organization {
+  id             Int              @id @default(autoincrement())
+  name           String
+  departments    Department[]
+  roles          Role[]
+  kits           Kit[]
+  products       Product[]
+  birthdayPeople BirthdayPerson[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Department {
+  id             Int              @id @default(autoincrement())
+  name           String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organizationId Int
+  roles          Role[]
+  kits           Kit[]
+  birthdayPeople BirthdayPerson[]
+}
+
+model Role {
+  id             Int              @id @default(autoincrement())
+  name           String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organizationId Int
+  department     Department?      @relation(fields: [departmentId], references: [id])
+  departmentId   Int?
+  kits           Kit[]
+  birthdayPeople BirthdayPerson[]
+}
+
+model Kit {
+  id             Int              @id @default(autoincrement())
+  name           String
+  status         KitStatus        @default(ACTIVE)
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organizationId Int
+  department     Department?      @relation(fields: [departmentId], references: [id])
+  departmentId   Int?
+  role           Role?            @relation(fields: [roleId], references: [id])
+  roleId         Int?
+  items          KitItem[]
+  birthdayPeople BirthdayPerson[]
+}
+
+model Product {
+  id             Int              @id @default(autoincrement())
+  name           String
+  description    String?
+  sizeOptions    String?          
+  customizable   Boolean          @default(false)
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organizationId Int
+  items          KitItem[]
+}
+
+model KitItem {
+  id         Int      @id @default(autoincrement())
+  kit        Kit      @relation(fields: [kitId], references: [id])
+  kitId      Int
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  quantity   Int
+}
+
+model BirthdayPerson {
+  id              Int              @id @default(autoincrement())
+  fullName        String
+  birthDate       DateTime
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  organizationId  Int
+  department      Department       @relation(fields: [departmentId], references: [id])
+  departmentId    Int
+  role            Role             @relation(fields: [roleId], references: [id])
+  roleId          Int
+  cep             String
+  street          String
+  number          String
+  neighborhood    String
+  city            String
+  state           String
+  complement      String?
+  shirtSize       String?          
+  kit             Kit?             @relation(fields: [kitId], references: [id])
+  kitId           Int?
+  kitOrigin       KitOrigin        @default(DEPARTMENT)
+  createdBy       Int              
+  updatedBy       Int
+  sendStatus      SendStatusStatus[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model SendStatusStatus {
+  id              Int             @id @default(autoincrement())
+  birthdayPerson  BirthdayPerson  @relation(fields: [birthdayPersonId], references: [id])
+  birthdayPersonId Int
+  status          SendStatus      @default(PENDING)
+  sendDate        DateTime?
+  deliveryDate    DateTime?
+  notes           String?
+}
