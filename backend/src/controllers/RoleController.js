@@ -3,10 +3,8 @@ import { prisma } from "../../prisma/client.js";
 export default class RoleController {
   static async getAll(req, res) {
     try {
-      const roles = await prisma.role.findMany({
-        include: { department: true, organization: true }
-      });
-      res.json(roles);
+      const cargos = await prisma.cargo.findMany();
+      res.json(cargos);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -14,11 +12,11 @@ export default class RoleController {
 
   static async create(req, res) {
     try {
-      const { name, organizationId, departmentId } = req.body;
-      const role = await prisma.role.create({
+      const { nome, organizationId, departmentId } = req.body;
+      const role = await prisma.cargo.create({
         data: {
-          name,
-          organizationId: Number(organizationId),
+          nome,
+          organizacaoId: Number(organizationId),
           departmentId: departmentId ? Number(departmentId) : null
         }
       });

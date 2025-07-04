@@ -12,7 +12,8 @@ import Usuarios from './pages/Usuarios';
 import Kits from './pages/Kits';
 import Aniversariantes from './pages/Aniversariantes';
 import Envios from './pages/Envios';
-import GenericCrud from './pages/GenericCrud';
+import Departamentos from './pages/Departamentos';
+import Cargos from './pages/Cargos';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -72,7 +73,7 @@ export default function App() {
             path="departamentos"
             element={
               <PrivateRoute>
-                <GenericCrud title="Departamentos" endpoint="/departamentos" />
+                <Departamentos />
               </PrivateRoute>
             }
           />
@@ -81,7 +82,7 @@ export default function App() {
             path="cargos"
             element={
               <PrivateRoute>
-                <GenericCrud title="Cargos" endpoint="/cargos" />
+                <Cargos />
               </PrivateRoute>
             }
           />

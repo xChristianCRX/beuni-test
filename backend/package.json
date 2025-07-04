@@ -4,11 +4,11 @@
   "main": "index.js",
   "type": "module",
   "prisma": {
-    "schema": "prisma/schema.prisma"
+    "seed": "ts-node prisma/seed.ts"
   },
   "scripts": {
     "dev": "nodemon src/app.js",
-    "generate": "prisma generate"
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",

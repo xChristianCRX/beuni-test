@@ -31,7 +31,6 @@ model Organizacao {
 
   usuarios       Usuario[]
   departamentos  Departamento[]
-  cargos         Cargo[]
   aniversariantes Aniversariante[]
 
   Convite Convite[]
@@ -58,13 +57,14 @@ model Departamento {
   aniversariantes  Aniversariante[]
   data_criacao     DateTime       @default(now())
   data_atualizacao DateTime       @updatedAt
+  cargos Cargo[]
 }
 
 model Cargo {
   id               Int            @id @default(autoincrement())
   nome             String
-  organizacao      Organizacao    @relation(fields: [organizacaoId], references: [id])
-  organizacaoId    Int
+  departamento     Departamento   @relation(fields: [departamentoId], references: [id])
+  departamentoId   Int
   kit              Kit?           @relation(fields: [kitId], references: [id])
   kitId            Int?
   aniversariantes  Aniversariante[]

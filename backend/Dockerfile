@@ -10,6 +10,6 @@ COPY . .
 
 RUN npx prisma generate
 
-EXPOSE 3001
+EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD sh -c "npx prisma db push && npm run seed && npm run dev"

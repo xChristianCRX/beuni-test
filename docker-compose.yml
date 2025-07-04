@@ -1,6 +1,11 @@
 services:
   db:
     image: postgres:15
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d beuni"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     container_name: postgres_db
     restart: always
     environment:
@@ -9,14 +14,15 @@ services:
       POSTGRES_DB: beuni
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/prisma/seed.sql:/docker-entrypoint-initdb.d/seed.sql ✅
     ports:
       - "5432:5432"
 
   backend:
     build: ./backend
+    command: sh -c "npx prisma db push && node prisma/seed.js && npm run dev"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:root@db:5432/beuni
     ports:
@@ -29,5 +35,15 @@ services:
     depends_on:
       - backend
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
 volumes:
   postgres_data:

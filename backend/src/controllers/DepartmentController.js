@@ -4,7 +4,7 @@ export default class DepartmentController {
     static async getAll(req, res) {
         try {
             const departamentos = await prisma.departamento.findMany({
-                include: { organizacao: true }
+                include: { kit: true }
             });
             res.json(departamentos);
         } catch (error) {
