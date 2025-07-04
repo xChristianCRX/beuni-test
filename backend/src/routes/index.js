@@ -1,22 +1,20 @@
 import { Router } from "express";
 import birthdayRoutes from "./birthday.routes.js";
 import authRoutes from "./auth.routes.js"
-import organizationRoutes from "./organization.routes.js"
+import userRoutes from "./user.routes.js"
 import departmentRoutes from "./department.routes.js"
 import roleRoutes from "./role.routes.js"
-import productRoutes from "./product.routes.js"
 import kitRoutes from "./kit.routes.js"
-import sendStatusRoutes from "./send-status.routes.js"
+import sendRoutes from "./send.routes.js"
 
 const routes = Router();
 
 routes.use("/auth", authRoutes);
-routes.use("/organizations", organizationRoutes);
-routes.use("/departments", departmentRoutes);
-routes.use("/roles", roleRoutes);
-routes.use("/products", productRoutes);
+routes.use("/usuarios", userRoutes);
+routes.use("/departamentos", departmentRoutes);
+routes.use("/cargos", roleRoutes);
 routes.use("/kits", kitRoutes);
-routes.use("/birthdays", birthdayRoutes);
-routes.use("/send-status", sendStatusRoutes);
+routes.use("/aniversariantes", birthdayRoutes);
+routes.use("/envios", sendRoutes);
 
 export default routes;

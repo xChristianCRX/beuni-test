@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,134 +13,149 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Usuario {
-  id           Int      @id @default(autoincrement())
-  nome         String
-  email        String   @unique
-  senha        String
-}
-
-enum KitStatus {
-  ACTIVE
-  INACTIVE
-}
-
 enum SendStatus {
-  PENDING
-  SENT
-  DELIVERED
-  FAILED
-  CANCELLED
+  pendente
+  enviado
+  entregue
+  falha
+  cancelado
 }
 
-enum KitOrigin {
-  DEPARTMENT
-  ROLE
-  MANUAL
+model Organizacao {
+  id             Int           @id @default(autoincrement())
+  nome           String
+  cnpj           String        @unique
+  endereco       String?
+  data_criacao   DateTime      @default(now())
+  data_atualizacao DateTime    @updatedAt
+
+  usuarios       Usuario[]
+  departamentos  Departamento[]
+  cargos         Cargo[]
+  aniversariantes Aniversariante[]
+
+  Convite Convite[]
 }
 
-model Organization {
-  id             Int              @id @default(autoincrement())
-  name           String
-  departments    Department[]
-  roles          Role[]
-  kits           Kit[]
-  products       Product[]
-  birthdayPeople BirthdayPerson[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+model Usuario {
+  id             Int         @id @default(autoincrement())
+  nome           String
+  email          String      @unique
+  senha_hash     String
+  organizacao    Organizacao @relation(fields: [organizacaoId], references: [id])
+  organizacaoId  Int
+  data_criacao   DateTime    @default(now())
+  data_atualizacao DateTime  @updatedAt
 }
 
-model Department {
-  id             Int              @id @default(autoincrement())
-  name           String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  organizationId Int
-  roles          Role[]
-  kits           Kit[]
-  birthdayPeople BirthdayPerson[]
+model Departamento {
+  id               Int            @id @default(autoincrement())
+  nome             String
+  organizacao      Organizacao    @relation(fields: [organizacaoId], references: [id])
+  organizacaoId    Int
+  kit              Kit?           @relation(fields: [kitId], references: [id])
+  kitId            Int?
+  aniversariantes  Aniversariante[]
+  data_criacao     DateTime       @default(now())
+  data_atualizacao DateTime       @updatedAt
 }
 
-model Role {
-  id             Int              @id @default(autoincrement())
-  name           String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  organizationId Int
-  department     Department?      @relation(fields: [departmentId], references: [id])
-  departmentId   Int?
-  kits           Kit[]
-  birthdayPeople BirthdayPerson[]
+model Cargo {
+  id               Int            @id @default(autoincrement())
+  nome             String
+  organizacao      Organizacao    @relation(fields: [organizacaoId], references: [id])
+  organizacaoId    Int
+  kit              Kit?           @relation(fields: [kitId], references: [id])
+  kitId            Int?
+  aniversariantes  Aniversariante[]
+  data_criacao     DateTime       @default(now())
+  data_atualizacao DateTime       @updatedAt
 }
 
 model Kit {
-  id             Int              @id @default(autoincrement())
-  name           String
-  status         KitStatus        @default(ACTIVE)
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  organizationId Int
-  department     Department?      @relation(fields: [departmentId], references: [id])
-  departmentId   Int?
-  role           Role?            @relation(fields: [roleId], references: [id])
-  roleId         Int?
-  items          KitItem[]
-  birthdayPeople BirthdayPerson[]
+  id               Int            @id @default(autoincrement())
+  nome             String
+  descricao        String?
+  produtos         KitProduto[]
+  departamentos    Departamento[]
+  cargos           Cargo[]
+  envios           Envio[]
+  data_criacao     DateTime       @default(now())
+  data_atualizacao DateTime       @updatedAt
 }
 
-model Product {
-  id             Int              @id @default(autoincrement())
-  name           String
-  description    String?
-  sizeOptions    String?          
-  customizable   Boolean          @default(false)
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  organizationId Int
-  items          KitItem[]
+model Produto {
+  id               Int            @id @default(autoincrement())
+  nome             String
+  descricao        String?
+  personalizavel   Boolean        @default(true)
+  kits             KitProduto[]
+  data_criacao     DateTime       @default(now())
+  data_atualizacao DateTime       @updatedAt
 }
 
-model KitItem {
-  id         Int      @id @default(autoincrement())
-  kit        Kit      @relation(fields: [kitId], references: [id])
+model KitProduto {
+  kit        Kit     @relation(fields: [kitId], references: [id])
   kitId      Int
-  product    Product  @relation(fields: [productId], references: [id])
-  productId  Int
-  quantity   Int
+  produto    Produto @relation(fields: [produtoId], references: [id])
+  produtoId  Int
+  quantidade Int     @default(1)
+
+  @@id([kitId, produtoId])
 }
 
-model BirthdayPerson {
-  id              Int              @id @default(autoincrement())
-  fullName        String
-  birthDate       DateTime
-  organization    Organization     @relation(fields: [organizationId], references: [id])
-  organizationId  Int
-  department      Department       @relation(fields: [departmentId], references: [id])
-  departmentId    Int
-  role            Role             @relation(fields: [roleId], references: [id])
-  roleId          Int
-  cep             String
-  street          String
-  number          String
-  neighborhood    String
-  city            String
-  state           String
-  complement      String?
-  shirtSize       String?          
-  kit             Kit?             @relation(fields: [kitId], references: [id])
-  kitId           Int?
-  kitOrigin       KitOrigin        @default(DEPARTMENT)
-  createdBy       Int              
-  updatedBy       Int
-  sendStatus      SendStatusStatus[]
+model Aniversariante {
+  id               Int           @id @default(autoincrement())
+  nome             String
+  data_nascimento  DateTime
+  cep              String
+  rua              String
+  numero           String
+  complemento      String?
+  bairro           String
+  cidade           String
+  estado           String
+  tamanho_camiseta String?
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  departamento     Departamento? @relation(fields: [departamentoId], references: [id])
+  departamentoId   Int?
+  cargo            Cargo?        @relation(fields: [cargoId], references: [id])
+  cargoId          Int?
+  organizacao      Organizacao   @relation(fields: [organizacaoId], references: [id])
+  organizacaoId    Int
+
+  envios           Envio[]
+  data_criacao     DateTime      @default(now())
+  data_atualizacao DateTime      @updatedAt
 }
 
-model SendStatusStatus {
-  id              Int             @id @default(autoincrement())
-  birthdayPerson  BirthdayPerson  @relation(fields: [birthdayPersonId], references: [id])
-  birthdayPersonId Int
-  status          SendStatus      @default(PENDING)
-  sendDate        DateTime?
-  deliveryDate    DateTime?
-  notes           String?
+model Envio {
+  id               Int           @id @default(autoincrement())
+  aniversariante   Aniversariante @relation(fields: [aniversarianteId], references: [id])
+  aniversarianteId Int
+  kit              Kit           @relation(fields: [kitId], references: [id])
+  kitId            Int
+  status           SendStatus    @default(pendente)
+  data_disparo     DateTime?
+  data_entrega     DateTime?
+  data_criacao     DateTime      @default(now())
+  data_atualizacao DateTime      @updatedAt
+}
+
+enum ConviteStatus {
+  pendente
+  aceito
+  expirado
+  cancelado
+}
+
+model Convite {
+  id             Int           @id @default(autoincrement())
+  email          String
+  token          String        @unique
+  organizacao    Organizacao   @relation(fields: [organizacaoId], references: [id])
+  organizacaoId  Int
+  status         ConviteStatus @default(pendente)
+  data_validade  DateTime
+  data_criacao   DateTime      @default(now())
 }
