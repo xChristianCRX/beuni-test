@@ -1,17 +1,4 @@
 services:
-  backend:
-    build: ./backend
-    container_name: backend
-    ports:
-      - "3001:3001"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/beuni
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      - db
-
   db:
     image: postgres:15
     container_name: postgres_db
@@ -20,10 +7,27 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
       POSTGRES_DB: beuni
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/prisma/seed.sql:/docker-entrypoint-initdb.d/seed.sql ✅
     ports:
       - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:root@db:5432/beuni
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80" 
+    depends_on:
+      - backend
 
 volumes:
-  db_data:
+  postgres_data:

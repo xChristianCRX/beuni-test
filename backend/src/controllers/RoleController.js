@@ -1,7 +1,7 @@
 import { prisma } from "../../prisma/client.js";
 
-export default class RoleController{
-    static async getAll(req, res) {
+export default class RoleController {
+  static async getAll(req, res) {
     try {
       const roles = await prisma.role.findMany({
         include: { department: true, organization: true }

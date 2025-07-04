@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import 'dotenv/config';
 import jwt from "jsonwebtoken";
 import { prisma } from "../../prisma/client.js";
 
@@ -45,6 +46,34 @@ export default class AuthController {
     } catch (error) {
       console.error("Erro no login:", error);
       return res.status(500).json({ message: "Erro no login." });
+    }
+  }
+
+  static async register(req, res) {
+    try {
+      const { nome, email, senha, organizacaoId } = req.body;
+
+      const userResult = await prisma.usuario.findUnique({
+        where: { email }
+      });
+
+      if (userResult)
+        return res.status(409).json({ message: "Usuário já existe!" });
+
+      const senhaHash = await bcrypt.hash(senha, 10);
+
+      await prisma.usuario.create({
+        data: {
+          nome,
+          email,
+          senha_hash: senhaHash,
+          organizacaoId
+        }
+      });
+
+      res.status(201).json({ message: "Usuário criado com sucesso!" });
+    } catch (error) {
+      res.status(500).json({ message: `${error.message} - Falha ao cadastrar usuário.` });
     }
   }
 }

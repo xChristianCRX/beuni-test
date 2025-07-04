@@ -3,10 +3,10 @@ import { prisma } from "../../prisma/client.js";
 export default class DepartmentController {
     static async getAll(req, res) {
         try {
-            const departments = await prisma.departamento.findMany({
+            const departamentos = await prisma.departamento.findMany({
                 include: { organizacao: true }
             });
-            res.json(departments);
+            res.json(departamentos);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -15,7 +15,7 @@ export default class DepartmentController {
     static async create(req, res) {
         try {
             const { name, kitId } = req.body;
-            const department = await prisma.department.create({
+            const department = await prisma.departamento.create({
                 data: {
                     nome,
                     kitId: Number(kitId)
@@ -30,7 +30,7 @@ export default class DepartmentController {
     static async delete(req, res) {
         try {
             const { id } = req.params;
-            await prisma.department.delete({
+            await prisma.departamento.delete({
                 where: { id: Number(id) }
             });
             res.json({ message: "Departamento removido com sucesso" });
