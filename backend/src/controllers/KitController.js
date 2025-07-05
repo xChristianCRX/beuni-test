@@ -6,7 +6,6 @@ export default class KitController {
             const kits = await prisma.kit.findMany({
                 include: {
                     departamentos: true,
-                    cargos: true,
                     produtos: {
                         include: {
                             produto: true // aqui está a mágica!

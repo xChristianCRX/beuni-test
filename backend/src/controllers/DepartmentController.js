@@ -14,14 +14,15 @@ export default class DepartmentController {
 
     static async create(req, res) {
         try {
-            const { name, kitId } = req.body;
-            const department = await prisma.departamento.create({
+            const { nome, kitId, organizacaoId } = req.body;
+            const departamento = await prisma.departamento.create({
                 data: {
                     nome,
-                    kitId: Number(kitId)
+                    kitId: Number(kitId),
+                    organizacaoId: Number(organizacaoId)
                 }
             });
-            res.status(201).json(department);
+            res.status(201).json(departamento);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -42,26 +43,26 @@ export default class DepartmentController {
     static async update(req, res) {
         try {
             const { id } = req.params;
-            const { nome, email } = req.body;
+            const { nome, kitId } = req.body;
 
-            const usuario = await prisma.usuario.findUnique({ where: { id: Number(id) } });
-            if (!usuario) {
-                return res.status(404).json({ message: "Usuário não encontrado." });
+            const departamento = await prisma.departamento.findUnique({ where: { id: Number(id) } });
+            if (!departamento) {
+                return res.status(404).json({ message: "Departamento não encontrado." });
             }
 
-            const usuarioAtualizado = await prisma.usuario.update({
+            const departamentoAtualizado = await prisma.departamento.update({
                 where: { id: Number(id) },
                 data: {
                     nome,
-                    email,
+                    kitId,
                     data_atualizacao: new Date()
                 }
             });
 
-            res.status(200).json(usuarioAtualizado);
+            res.status(200).json(departamentoAtualizado);
         } catch (error) {
-            console.error("Erro ao atualizar usuário:", error);
-            res.status(500).json({ message: "Erro ao atualizar usuário." });
+            console.error("Erro ao atualizar departamento:", error);
+            res.status(500).json({ message: "Erro ao atualizar departamento." });
         }
     }
 }

@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { DepartamentoModal } from "@/components/ModalDepartamento";
 import { Pencil, Trash } from "lucide-react";
 import toast from "react-hot-toast";
+import { AuthContext } from "@/contexts/AuthContext";
+import { useContextSelector } from "use-context-selector";
+import Swal from "sweetalert2";
 
 interface Departamento {
     id: number;
@@ -17,18 +20,25 @@ interface Kit {
     nome: string;
 }
 
+// Este tipo representa os dados vindos do formulário (sem organizacaoId)
+interface DepartamentoFormData {
+    nome: string;
+    kitId: number;
+}
+
 export default function Departamentos() {
     const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
     const [kits, setKits] = useState<Kit[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Departamento | null>(null);
 
+    const user = useContextSelector(AuthContext, (ctx) => ctx.user);
+
     async function load() {
         const [depRes, kitsRes] = await Promise.all([
             api.get("/departamentos"),
             api.get("/kits"),
         ]);
-        console.log(depRes.data)
         setDepartamentos(depRes.data);
         setKits(kitsRes.data);
     }
@@ -37,16 +47,26 @@ export default function Departamentos() {
         load();
     }, []);
 
-    function handleCreate(data: { nome: string; kitId: number }) {
+    function handleCreate(data: DepartamentoFormData) {
+        if (!user?.organizationId) {
+            toast.error("Organização não identificada.");
+            return;
+        }
+
+        const payload = {
+            ...data,
+            organizacaoId: user.organizationId,
+        };
+
         if (editing) {
-            api.put(`/departamentos/${editing.id}`, data).then(() => {
+            api.put(`/departamentos/${editing.id}`, payload).then(() => {
                 toast.success("Departamento atualizado com sucesso");
                 setEditing(null);
                 setModalOpen(false);
                 load();
             });
         } else {
-            api.post("/departamentos", data).then(() => {
+            api.post("/departamentos", payload).then(() => {
                 toast.success("Departamento criado");
                 setModalOpen(false);
                 load();
@@ -55,13 +75,25 @@ export default function Departamentos() {
     }
 
     function handleDelete(id: number) {
-        if (confirm("Deseja realmente excluir este departamento?")) {
-            api.delete(`/departamentos/${id}`).then(() => {
-                toast.success("Departamento removido");
-                load();
-            });
-        }
+        Swal.fire({
+            title: "Tem certeza?",
+            text: "Essa ação não pode ser desfeita!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#aaa",
+            confirmButtonText: "Sim, excluir",
+            cancelButtonText: "Cancelar",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                api.delete(`/departamentos/${id}`).then(() => {
+                    toast.success("Departamento removido");
+                    load();
+                });
+            }
+        });
     }
+
 
     return (
         <div className="p-8 bg-orange-50 min-h-screen">

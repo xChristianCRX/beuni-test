@@ -1,20 +1,33 @@
 import bcrypt from "bcryptjs";
+import { prisma } from "../../prisma/client.js";
 
 export default class UserController {
     static async getAll(req, res) {
         try {
             const organizacaoId = req.user.organizacaoId;
+            console.log(organizacaoId)
             const usuarios = await prisma.usuario.findMany({
-                where: { organizacaoId },
-                select: {
-                    id: true,
-                    nome: true,
-                    email: true,
-                    data_criacao: true,
-                }
+                where: {
+                    organizacaoId: Number(organizacaoId),
+                },
+                include: {
+                    convite: {
+                        select: {
+                            status: true,
+                        },
+                    },
+                },
             });
 
-            res.status(200).json(usuarios);
+            const usuariosFormatados = usuarios.map((u) => ({
+                id: u.id,
+                nome: u.nome,
+                email: u.email,
+                status: u.convite?.status || "ativo",
+                data_criacao: u.data_criacao,
+            }));
+
+            res.status(200).json(usuariosFormatados);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

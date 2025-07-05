@@ -37,34 +37,29 @@ model Organizacao {
 }
 
 model Usuario {
-  id             Int         @id @default(autoincrement())
-  nome           String
-  email          String      @unique
-  senha_hash     String
-  organizacao    Organizacao @relation(fields: [organizacaoId], references: [id])
-  organizacaoId  Int
-  data_criacao   DateTime    @default(now())
-  data_atualizacao DateTime  @updatedAt
+  id                Int         @id @default(autoincrement())
+  nome              String
+  email             String      @unique
+  senha_hash        String
+  organizacao       Organizacao @relation(fields: [organizacaoId], references: [id])
+  organizacaoId     Int
+
+  convite           Convite?    @relation("UsuarioConvite")
+
+  convidadoPorId    Int?
+  convidadoPor      Usuario?    @relation("UsuariosConvidados", fields: [convidadoPorId], references: [id])
+  convidados        Usuario[]   @relation("UsuariosConvidados")
+
+  data_criacao      DateTime    @default(now())
+  data_atualizacao  DateTime    @updatedAt
 }
+
 
 model Departamento {
   id               Int            @id @default(autoincrement())
   nome             String
   organizacao      Organizacao    @relation(fields: [organizacaoId], references: [id])
   organizacaoId    Int
-  kit              Kit?           @relation(fields: [kitId], references: [id])
-  kitId            Int?
-  aniversariantes  Aniversariante[]
-  data_criacao     DateTime       @default(now())
-  data_atualizacao DateTime       @updatedAt
-  cargos Cargo[]
-}
-
-model Cargo {
-  id               Int            @id @default(autoincrement())
-  nome             String
-  departamento     Departamento   @relation(fields: [departamentoId], references: [id])
-  departamentoId   Int
   kit              Kit?           @relation(fields: [kitId], references: [id])
   kitId            Int?
   aniversariantes  Aniversariante[]
@@ -78,7 +73,6 @@ model Kit {
   descricao        String?
   produtos         KitProduto[]
   departamentos    Departamento[]
-  cargos           Cargo[]
   envios           Envio[]
   data_criacao     DateTime       @default(now())
   data_atualizacao DateTime       @updatedAt
@@ -115,12 +109,11 @@ model Aniversariante {
   bairro           String
   cidade           String
   estado           String
+  cargo            String
   tamanho_camiseta String?
 
   departamento     Departamento? @relation(fields: [departamentoId], references: [id])
   departamentoId   Int?
-  cargo            Cargo?        @relation(fields: [cargoId], references: [id])
-  cargoId          Int?
   organizacao      Organizacao   @relation(fields: [organizacaoId], references: [id])
   organizacaoId    Int
 
@@ -153,8 +146,13 @@ model Convite {
   id             Int           @id @default(autoincrement())
   email          String
   token          String        @unique
+
   organizacao    Organizacao   @relation(fields: [organizacaoId], references: [id])
   organizacaoId  Int
+
+  usuarioId     Int       @unique
+  usuario       Usuario   @relation("UsuarioConvite", fields: [usuarioId], references: [id])
+
   status         ConviteStatus @default(pendente)
   data_validade  DateTime
   data_criacao   DateTime      @default(now())

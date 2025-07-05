@@ -6,7 +6,6 @@ export default class BirthdayController {
             const birthdays = await prisma.aniversariante.findMany({
                 include: {
                     departamento: true,
-                    cargo: true,
                     organizacao: true,
                     envios: true
                 }
@@ -39,19 +38,10 @@ export default class BirthdayController {
                 nome, data_nascimento, cep, rua,
                 numero, complemento, bairro, cidade,
                 estado, tamanho_camiseta, departamentoId,
-                cargoId, organizacaoId
+                cargo, organizacaoId
             } = req.body;
-
+            console.log(data_nascimento)
             let kitId = null;
-            if (cargoId) {
-                const cargo = await prisma.cargo.findUnique({
-                    where: { id: Number(cargoId) },
-                    include: { kit: true }
-                });
-
-                if (cargo?.kit)
-                    kitId = cargo.kit.id;
-            }
 
             if (!kitId && departamentoId) {
                 const departamento = await prisma.departamento.findUnique({
@@ -94,7 +84,7 @@ export default class BirthdayController {
                     estado,
                     tamanho_camiseta,
                     departamentoId: departamentoId ? Number(departamentoId) : null,
-                    cargoId: cargoId ? Number(cargoId) : null,
+                    cargo,
                     organizacaoId: Number(organizacaoId),
                     envios: {
                         create: {
@@ -120,13 +110,8 @@ export default class BirthdayController {
                     estado: aniversariante.estado
                 },
                 departamento_id: aniversariante.departamentoId,
-                cargo_id: aniversariante.cargoId,
+                cargo: aniversariante.cargo,
                 tamanho_camiseta: aniversariante.tamanho_camiseta,
-                kit_atribuido: {
-                    id: kitSelecionado.id,
-                    nome: kitSelecionado.nome,
-                    descricao: kitSelecionado.descricao
-                },
                 data_criacao: aniversariante.data_criacao
             };
 
@@ -137,12 +122,116 @@ export default class BirthdayController {
         }
     }
 
+    static async update(req, res) {
+        try {
+            const { id } = req.params;
+            const {
+                nome, data_nascimento, cep, rua,
+                numero, complemento, bairro, cidade,
+                estado, tamanho_camiseta, departamentoId,
+                cargo, organizacaoId
+            } = req.body;
+
+            const aniversarianteExistente = await prisma.aniversariante.findUnique({
+                where: { id: Number(id) }
+            });
+
+            if (!aniversarianteExistente) {
+                return res.status(404).json({ mensagem: 'Aniversariante não encontrado.' });
+            }
+
+            let kitId = null;
+            if (!kitId && departamentoId) {
+                const departamento = await prisma.departamento.findUnique({
+                    where: { id: Number(departamentoId) },
+                    include: { kit: true }
+                });
+
+                if (departamento?.kit) {
+                    kitId = departamento.kit.id;
+                }
+            }
+
+            if (!kitId) {
+                const kitPadrao = await prisma.kit.findFirst({
+                    where: {
+                        nome: { contains: 'padrão', mode: 'insensitive' },
+                        departamentos: { some: { organizacaoId: Number(organizacaoId) } }
+                    }
+                });
+
+                if (kitPadrao) {
+                    kitId = kitPadrao.id;
+                }
+            }
+
+            if (!kitId) {
+                return res.status(400).json({
+                    mensagem: 'Nenhum kit associado foi encontrado. Configure um kit para o cargo, departamento ou kit padrão da organização.'
+                });
+            }
+
+            const aniversarianteAtualizado = await prisma.aniversariante.update({
+                where: { id: Number(id) },
+                data: {
+                    nome,
+                    data_nascimento: new Date(data_nascimento),
+                    cep,
+                    rua,
+                    numero,
+                    complemento,
+                    bairro,
+                    cidade,
+                    estado,
+                    tamanho_camiseta,
+                    departamentoId: departamentoId ? Number(departamentoId) : null,
+                    cargo,
+                    organizacaoId: Number(organizacaoId),
+                },
+                include: {
+                    envios: true
+                }
+            });
+
+            const responseJson = {
+                id: aniversarianteAtualizado.id,
+                nome: aniversarianteAtualizado.nome,
+                data_nascimento: aniversarianteAtualizado.data_nascimento,
+                endereco: {
+                    cep: aniversarianteAtualizado.cep,
+                    rua: aniversarianteAtualizado.rua,
+                    numero: aniversarianteAtualizado.numero,
+                    complemento: aniversarianteAtualizado.complemento,
+                    bairro: aniversarianteAtualizado.bairro,
+                    cidade: aniversarianteAtualizado.cidade,
+                    estado: aniversarianteAtualizado.estado
+                },
+                departamento_id: aniversarianteAtualizado.departamentoId,
+                cargo: aniversarianteAtualizado.cargo,
+                tamanho_camiseta: aniversarianteAtualizado.tamanho_camiseta,
+                data_atualizacao: aniversarianteAtualizado.data_atualizacao
+            };
+
+            res.status(200).json(responseJson);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ erro: 'Erro ao atualizar aniversariante.', detalhes: error.message });
+        }
+    }
+
+
     static async delete(req, res) {
         try {
             const { id } = req.params;
+
+            await prisma.envio.deleteMany({
+                where: { aniversarianteId: Number(id) }
+            });
+
             await prisma.aniversariante.delete({
                 where: { id: Number(id) }
             });
+            
             res.json({ message: "Aniversariante removido com sucesso" });
         } catch (error) {
             res.status(500).json({ error: error.message });

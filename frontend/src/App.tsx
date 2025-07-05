@@ -13,7 +13,6 @@ import Kits from './pages/Kits';
 import Aniversariantes from './pages/Aniversariantes';
 import Envios from './pages/Envios';
 import Departamentos from './pages/Departamentos';
-import Cargos from './pages/Cargos';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -74,15 +73,6 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Departamentos />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="cargos"
-            element={
-              <PrivateRoute>
-                <Cargos />
               </PrivateRoute>
             }
           />

@@ -74,16 +74,6 @@ async function main() {
     },
   });
 
-  // Cargo
-  await prisma.cargo.create({
-    data: {
-      id: 1,
-      nome: 'Designer',
-      departamentoId: 1,
-      kitId: 1,
-    },
-  });
-
   // Usuário com senha hash
   const senhaHash = await bcrypt.hash('admin123', 10);
   await prisma.usuario.create({
@@ -110,7 +100,7 @@ async function main() {
       estado: 'SP',
       tamanho_camiseta: 'M',
       departamentoId: 1,
-      cargoId: 1,
+      cargo: 'Gerente',
       organizacaoId: 1,
     },
   });
@@ -131,15 +121,19 @@ async function main() {
       id: 1,
       email: 'convite@beuni.com',
       token: 'TOKEN-DE-EXEMPLO',
+      usuarioId: 1,
       organizacaoId: 1,
       status: 'pendente',
       data_validade: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   });
+
+  console.log("Seed criada!")
 }
 
 main()
   .catch((e) => {
+    console.error("Erro no seed:", e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
