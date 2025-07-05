@@ -1,34 +1,48 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../prisma/client.js";
+import jwt from "jsonwebtoken";
+import { transporter } from "../../utils/emailService.js";
 
 export default class UserController {
     static async getAll(req, res) {
         try {
             const organizacaoId = req.user.organizacaoId;
-            console.log(organizacaoId)
+
             const usuarios = await prisma.usuario.findMany({
                 where: {
                     organizacaoId: Number(organizacaoId),
                 },
-                include: {
-                    convite: {
-                        select: {
-                            status: true,
-                        },
-                    },
+            });
+
+            const convites = await prisma.convite.findMany({
+                where: {
+                    organizacaoId: Number(organizacaoId),
+                    status: 'pendente',
                 },
             });
 
-            const usuariosFormatados = usuarios.map((u) => ({
+            const usuariosAtivos = usuarios.map((u) => ({
                 id: u.id,
                 nome: u.nome,
                 email: u.email,
-                status: u.convite?.status || "ativo",
+                status: 'ativo',
                 data_criacao: u.data_criacao,
+                tipo: 'usuario',
             }));
 
-            res.status(200).json(usuariosFormatados);
+            const convitesPendentes = convites.map((c) => ({
+                id: c.id,
+                nome: null,
+                email: c.emailConvidado,
+                status: 'pendente',
+                data_criacao: c.data_criacao,
+                tipo: 'convite',
+            }));
+
+            const resultado = [...usuariosAtivos, ...convitesPendentes];
+            res.status(200).json(resultado);
         } catch (error) {
+            console.error(error);
             res.status(500).json({ error: error.message });
         }
     }
@@ -61,21 +75,20 @@ export default class UserController {
     static async registrar(req, res) {
         try {
             const { nome, senha, token } = req.body;
-
             const convite = await prisma.convite.findUnique({ where: { token } });
 
             if (!convite || convite.status !== "pendente" || new Date() > convite.data_validade) {
-                return res.status(400).json({ message: "Convite inválido ou expirado." });
+                return res.status(400).json({ message: "Token inválido ou expirado." });
             }
 
-            const senha_hash = await bcrypt.hash(senha, 10);
-
-            const usuarioCriado = await prisma.usuario.create({
+            const senhaHash = await bcrypt.hash(senha, 10);
+            const novoUsuario = await prisma.usuario.create({
                 data: {
                     nome,
-                    email: convite.email,
-                    senha_hash,
-                    organizacaoId: convite.organizacaoId
+                    email: convite.emailConvidado,
+                    senha_hash: senhaHash,
+                    organizacaoId: convite.organizacaoId,
+                    convidadoPorId: convite.usuario_envio
                 }
             });
 
@@ -84,7 +97,7 @@ export default class UserController {
                 data: { status: "aceito" }
             });
 
-            return res.status(201).json({ message: "Usuário registrado com sucesso!" });
+            res.status(201).json({ message: "Usuário registrado com sucesso!", usuario: novoUsuario });
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: "Erro ao registrar usuário." });
@@ -94,48 +107,57 @@ export default class UserController {
     static async convidar(req, res) {
         try {
             const { email } = req.body;
-            const existe = await prisma.usuario.findUnique({ where: { email } });
-            if (existe) {
-                return res.status(400).json({ message: "Usuário já registrado com este e-mail." });
-            }
+            const organizacaoId = req.user.organizacaoId;
 
-            const token = uuidv4();
-            const validade = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
-
-            const convite = await prisma.convite.create({
-                data: {
-                    email,
-                    token,
-                    organizacaoId: Number(organizacaoId),
-                    data_validade: validade
+            const existe = await prisma.usuario.findFirst({
+                where: {
+                    AND: [
+                        { email: email },
+                        { organizacaoId: organizacaoId }
+                    ]
                 }
             });
-            const link = `https://seusite.com/registro?token=${token}`;
-            return res.status(200).json({ message: "Convite enviado para " + email });
+            if (existe)
+                return res.status(400).json({ message: "Usuário já registrado com este e-mail." });
+
+            const usuario = req.user;
+            const token = jwt.sign(
+                {
+                    email,
+                    organizacaoId: usuario.organizacaoId
+                },
+                process.env.JWT_SECRET,
+                { expiresIn: "7d" }
+            );
+
+            const validade = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await prisma.convite.create({
+                data: {
+                    emailConvidado: email,
+                    token,
+                    data_validade: validade,
+                    organizacaoId: usuario.organizacaoId,
+                    enviadoPorId: usuario.id
+                }
+            });
+
+            const link = `http://localhost:5173/registro?token=${token}`;
+            await transporter.sendMail({
+                from: process.env.EMAIL_FROM,
+                to: email,
+                subject: "Convite para acesso ao sistema Beuni",
+                html: `
+        <h3>Você foi convidado para o sistema Beuni</h3>
+        <p>Para completar seu cadastro, clique no link abaixo:</p>
+        <a href="${link}">${link}</a>
+        <p>O link expira em 7 dias.</p>
+      `
+            });
+
+            return res.status(200).json({ message: `Convite enviado para ${email}` });
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: "Erro ao convidar usuário." });
-        }
-    }
-
-    static async validarConvite(req, res) {
-        try {
-            const { token } = req.query;
-            const convite = await prisma.convite.findUnique({ where: { token } });
-
-            if (!convite || convite.status !== "pendente" || new Date() > convite.data_validade) {
-                return res.status(400).json({ message: "Convite inválido ou expirado." });
-            }
-
-            return res.status(200).json({
-                email: convite.email,
-                organizacaoId: convite.organizacaoId,
-                status: convite.status,
-                conviteId: convite.id
-            });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Erro ao validar convite." });
         }
     }
 }

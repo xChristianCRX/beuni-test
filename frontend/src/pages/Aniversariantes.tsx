@@ -32,23 +32,45 @@ interface Aniversariante {
 }
 
 export default function Aniversariantes() {
-  const [lista, setLista] = useState<Aniversariante[]>([]);
+  const [listaCompleta, setListaCompleta] = useState<Aniversariante[]>([]);
+  const [listaFiltrada, setListaFiltrada] = useState<Aniversariante[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Aniversariante | null>(null);
+
+  const [departamentoFiltro, setDepartamentoFiltro] = useState<string>("todos");
+  const [mesFiltro, setMesFiltro] = useState<string>("todos");
 
   const load = async () => {
     const [resAniversariantes, resDepartamentos] = await Promise.all([
       api.get("/aniversariantes"),
       api.get("/departamentos"),
     ]);
-    setLista(resAniversariantes.data);
+    setListaCompleta(resAniversariantes.data);
     setDepartamentos(resDepartamentos.data);
   };
 
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    let filtrado = listaCompleta;
+
+    if (departamentoFiltro !== "todos") {
+      filtrado = filtrado.filter(
+        (a) => a.departamentoId === parseInt(departamentoFiltro)
+      );
+    }
+
+    if (mesFiltro !== "todos") {
+      filtrado = filtrado.filter(
+        (a) => new Date(a.data_nascimento).getMonth() === parseInt(mesFiltro)
+      );
+    }
+
+    setListaFiltrada(filtrado);
+  }, [departamentoFiltro, mesFiltro, listaCompleta]);
 
   const handleDelete = (id: number) => {
     Swal.fire({
@@ -62,12 +84,15 @@ export default function Aniversariantes() {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        api.delete(`/aniversariantes/${id}`).then(() => {
-          toast.success("Aniversariante removido");
-          load();
-        }).catch(() => {
-          toast.error("Erro ao remover aniversariante");
-        });
+        api
+          .delete(`/aniversariantes/${id}`)
+          .then(() => {
+            toast.success("Aniversariante removido");
+            load();
+          })
+          .catch(() => {
+            toast.error("Erro ao remover aniversariante");
+          });
       }
     });
   };
@@ -87,14 +112,58 @@ export default function Aniversariantes() {
         </Button>
       </div>
 
+      <div className="flex gap-4 mb-6 flex-wrap">
+        <div>
+          <label className="block text-sm text-gray-700 font-medium mb-1">
+            Filtrar por departamento:
+          </label>
+          <select
+            value={departamentoFiltro}
+            onChange={(e) => setDepartamentoFiltro(e.target.value)}
+            className="px-3 py-2 border rounded shadow-sm bg-white"
+          >
+            <option value="todos">Todos</option>
+            {departamentos.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-700 font-medium mb-1">
+            Filtrar por mês de nascimento:
+          </label>
+          <select
+            value={mesFiltro}
+            onChange={(e) => setMesFiltro(e.target.value)}
+            className="px-3 py-2 border rounded shadow-sm bg-white"
+          >
+            <option value="todos">Todos</option>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <option key={i} value={i}>
+                {new Date(2023, i, 1).toLocaleString("pt-BR", {
+                  month: "long",
+                })}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {lista.map((aniv) => (
+        {listaFiltrada.map((aniv) => (
           <div key={aniv.id} className="bg-white p-6 rounded-xl border shadow">
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-lg font-bold text-orange-800">{aniv.nome}</h2>
-                <p className="text-sm text-gray-600">{aniv.departamento.nome} — {aniv.cargo}</p>
-                <p className="text-sm text-gray-500">Nascimento: {new Date(aniv.data_nascimento).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-600">
+                  {aniv.departamento.nome} — {aniv.cargo}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Nascimento: {new Date(aniv.data_nascimento).toLocaleDateString()}
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button

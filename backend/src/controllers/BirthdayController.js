@@ -1,9 +1,12 @@
 import { prisma } from "../../prisma/client.js";
+import { subDays, addDays, startOfDay, endOfDay } from "date-fns";
 
 export default class BirthdayController {
     static async getAll(req, res) {
+        const organizacaoId = req.user.organizacaoId;
         try {
             const birthdays = await prisma.aniversariante.findMany({
+                where: { organizacaoId: Number(organizacaoId) },
                 include: {
                     departamento: true,
                     organizacao: true,
@@ -40,7 +43,6 @@ export default class BirthdayController {
                 estado, tamanho_camiseta, departamentoId,
                 cargo, organizacaoId
             } = req.body;
-            console.log(data_nascimento)
             let kitId = null;
 
             if (!kitId && departamentoId) {
@@ -219,7 +221,6 @@ export default class BirthdayController {
         }
     }
 
-
     static async delete(req, res) {
         try {
             const { id } = req.params;
@@ -231,10 +232,67 @@ export default class BirthdayController {
             await prisma.aniversariante.delete({
                 where: { id: Number(id) }
             });
-            
+
             res.json({ message: "Aniversariante removido com sucesso" });
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async birthdaysInSevenDays(req, res) {
+        try {
+            const organizacaoId  = req.user.organizacaoId;
+
+            const hoje = new Date();
+            const aniversariantes = await prisma.aniversariante.findMany({
+                where: {
+                    organizacaoId,
+                },
+                include: {
+                    departamento: true,
+                    envios: {
+                        orderBy: { data_criacao: "desc" },
+                        take: 1,
+                        include: {
+                            kit: true
+                        }
+                    }
+                }
+            });
+
+            const resultado = aniversariantes
+                .filter(a => {
+                    const nascimento = new Date(a.data_nascimento);
+                    nascimento.setFullYear(hoje.getFullYear());
+                    if (nascimento < hoje) nascimento.setFullYear(hoje.getFullYear() + 1);
+
+                    const diasRestantes = Math.ceil(
+                        (nascimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)
+                    );
+
+                    return diasRestantes >= 1 && diasRestantes <= 7;
+                })
+                .map(a => {
+                    const envio = a.envios[0];
+                    return {
+                        id: a.id,
+                        nome: a.nome,
+                        departamento: a.departamento?.nome || "Sem departamento",
+                        data_nascimento: a.data_nascimento,
+                        envio_id: envio.id,
+                        status_envio: envio?.status || "pendente",
+                        kit: envio?.kit
+                            ? {
+                                id: envio.kit.id,
+                                nome: envio.kit.nome
+                            }
+                            : null
+                    };
+                });
+            return res.status(200).json(resultado);
+        } catch (error) {
+            console.error("Erro ao buscar aniversariantes:", error);
+            return res.status(500).json({ message: "Erro interno do servidor." });
         }
     }
 }

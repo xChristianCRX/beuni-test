@@ -14,6 +14,15 @@ async function main() {
     },
   });
 
+  await prisma.organizacao.create({
+    data: {
+      id: 2,
+      nome: 'Kustomizai',
+      cnpj: '3334544890001',
+      endereco: 'Ipanema',
+    },
+  });
+
   // Produtos
   await prisma.produto.createMany({
     data: [
@@ -86,6 +95,16 @@ async function main() {
     },
   });
 
+  await prisma.usuario.create({
+    data: {
+      id: 2,
+      nome: 'Admin Kustomizai',
+      email: 'admin@kustomizai.com',
+      senha_hash: senhaHash,
+      organizacaoId: 2,
+    },
+  });
+
   // Aniversariante
   await prisma.aniversariante.create({
     data: {
@@ -119,16 +138,24 @@ async function main() {
   await prisma.convite.create({
     data: {
       id: 1,
-      email: 'convite@beuni.com',
+      emailConvidado: 'convite@beuni.com',
       token: 'TOKEN-DE-EXEMPLO',
-      usuarioId: 1,
+      enviadoPorId: 1,
       organizacaoId: 1,
-      status: 'pendente',
       data_validade: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   });
 
-  console.log("Seed criada!")
+  await prisma.convite.create({
+    data: {
+      id: 2,
+      emailConvidado: 'convite@kustomizai.com',
+      token: 'TOKEN-DE-EXEMPLO2',
+      enviadoPorId: 2,
+      organizacaoId: 2,
+      data_validade: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
 }
 
 main()

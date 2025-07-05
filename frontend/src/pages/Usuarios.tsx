@@ -1,10 +1,10 @@
-// src/pages/Usuarios.tsx
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 import { api } from "@/libs/axios";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Trash2, UserPlus, Repeat } from "lucide-react";
+import { Trash2, UserPlus, Repeat } from "lucide-react";
 import toast from "react-hot-toast";
 import { useContextSelector } from "use-context-selector";
 import { AuthContext } from "@/contexts/AuthContext";
@@ -18,9 +18,12 @@ interface Usuario {
     convidadoPor?: { nome: string };
 }
 
+const MySwal = withReactContent(Swal);
+type StatusFilter = "todos" | "ativo" | "pendente";
+
 export default function Usuarios() {
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-    const [statusFilter, setStatusFilter] = useState<"todos" | "ativo" | "pendente">("todos");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
 
     const userLogado = useContextSelector(AuthContext, (ctx) => ctx.user);
 
@@ -32,24 +35,37 @@ export default function Usuarios() {
 
     function loadUsuarios() {
         if (!userLogado?.organizationId) return;
-        console.log(userLogado.organizationId)
         api.get("/usuarios", {
-                params: {
-                    organizacaoId: userLogado.organizationId,
-                },
-            })
+            params: {
+                organizacaoId: userLogado.organizationId,
+            },
+        })
             .then((res) => {
                 setUsuarios(res.data);
             });
     }
 
-    function handleInvite() {
-        const email = prompt("Digite o e-mail do novo usuário:");
+    async function handleInvite() {
+        const { value: email } = await MySwal.fire({
+            title: "Convidar novo usuário",
+            input: "email",
+            inputLabel: "E-mail do novo usuário",
+            inputPlaceholder: "exemplo@empresa.com",
+            confirmButtonText: "Enviar convite",
+            confirmButtonColor: "#FF9913",
+            showCancelButton: true,
+            cancelButtonText: "Cancelar",
+            inputValidator: (value: string) => {
+                if (!value) return "Você precisa digitar um e-mail.";
+            },
+        });
+
         if (!email) return;
 
-        api.post("/usuarios/convite", { email })
+        api
+            .post("/usuarios/convidar", { email })
             .then(() => toast.success("Convite enviado com sucesso!"))
-            .catch(() => toast.error("Erro ao enviar convite"));
+            .catch(() => toast.error("Erro ao enviar convite."));
     }
 
     function handleDelete(id: number) {
@@ -61,8 +77,8 @@ export default function Usuarios() {
             .catch(() => toast.error("Erro ao remover usuário"));
     }
 
-    function handleReenviarConvite(id: number) {
-        api.post(`/usuarios/${id}/reenviar-convite`)
+    function handleReenviarConvite(email: string) {
+        api.post("/usuarios/convidar", { email })
             .then(() => toast.success("Convite reenviado"))
             .catch(() => toast.error("Erro ao reenviar convite"));
     }
@@ -87,10 +103,7 @@ export default function Usuarios() {
 
             <div className="flex items-center gap-4 mb-6">
                 <span className="text-sm font-medium text-gray-700">Filtrar por status:</span>
-                <Select
-                    value={statusFilter}
-                    onValueChange={(value) => setStatusFilter(value as any)}
-                >
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
                     <SelectTrigger className="w-40">
                         <SelectValue />
                     </SelectTrigger>
@@ -130,7 +143,7 @@ export default function Usuarios() {
                                         <Button
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => handleReenviarConvite(user.id)}
+                                            onClick={() => handleReenviarConvite(user.email)}
                                         >
                                             <Repeat className="w-4 h-4 mr-1" />
                                             Reenviar convite

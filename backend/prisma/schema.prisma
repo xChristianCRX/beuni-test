@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -37,23 +31,18 @@ model Organizacao {
 }
 
 model Usuario {
-  id                Int         @id @default(autoincrement())
-  nome              String
-  email             String      @unique
-  senha_hash        String
-  organizacao       Organizacao @relation(fields: [organizacaoId], references: [id])
-  organizacaoId     Int
+  id               Int          @id @default(autoincrement())
+  nome             String
+  email            String       @unique
+  senha_hash       String
+  data_criacao     DateTime     @default(now())
+  data_atualizacao DateTime     @updatedAt
 
-  convite           Convite?    @relation("UsuarioConvite")
+  organizacao      Organizacao  @relation(fields: [organizacaoId], references: [id])
+  organizacaoId    Int
 
-  convidadoPorId    Int?
-  convidadoPor      Usuario?    @relation("UsuariosConvidados", fields: [convidadoPorId], references: [id])
-  convidados        Usuario[]   @relation("UsuariosConvidados")
-
-  data_criacao      DateTime    @default(now())
-  data_atualizacao  DateTime    @updatedAt
+  convitesEnviados Convite[]    @relation("ConvitesEnviados")
 }
-
 
 model Departamento {
   id               Int            @id @default(autoincrement())
@@ -138,22 +127,20 @@ model Envio {
 enum ConviteStatus {
   pendente
   aceito
-  expirado
   cancelado
 }
 
 model Convite {
-  id             Int           @id @default(autoincrement())
-  email          String
-  token          String        @unique
+  id              Int           @id @default(autoincrement())
+  emailConvidado  String
+  token           String        @unique
+  data_validade   DateTime
+  status          ConviteStatus @default(pendente)
+  data_criacao    DateTime      @default(now())
 
-  organizacao    Organizacao   @relation(fields: [organizacaoId], references: [id])
-  organizacaoId  Int
+  organizacao     Organizacao   @relation(fields: [organizacaoId], references: [id])
+  organizacaoId   Int
 
-  usuarioId     Int       @unique
-  usuario       Usuario   @relation("UsuarioConvite", fields: [usuarioId], references: [id])
-
-  status         ConviteStatus @default(pendente)
-  data_validade  DateTime
-  data_criacao   DateTime      @default(now())
+  enviadoPor      Usuario       @relation("ConvitesEnviados", fields: [enviadoPorId], references: [id])
+  enviadoPorId    Int
 }

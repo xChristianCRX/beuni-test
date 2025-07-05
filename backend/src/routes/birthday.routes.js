@@ -6,6 +6,7 @@ const router = Router();
 
 router.use(authenticateJWT);
 router.get("/", BirthdayController.getAll);
+router.get("/proximos", BirthdayController.birthdaysInSevenDays)
 router.post("/", BirthdayController.create);
 router.put("/:id", BirthdayController.update);
 router.delete("/:id", BirthdayController.delete);

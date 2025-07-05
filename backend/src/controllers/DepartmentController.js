@@ -2,8 +2,11 @@ import { prisma } from "../../prisma/client.js";
 
 export default class DepartmentController {
     static async getAll(req, res) {
+        const organizacaoId = req.user.organizacaoId;
+
         try {
             const departamentos = await prisma.departamento.findMany({
+                where: { organizacaoId: Number(organizacaoId) },
                 include: { kit: true }
             });
             res.json(departamentos);

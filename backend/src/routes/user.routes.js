@@ -7,7 +7,6 @@ const router = Router();
 router.use(authenticateJWT);
 router.get("/", UserController.getAll);
 router.post("/convidar", UserController.convidar);
-router.get("/validar/:token", UserController.validarConvite)
 router.post("/registro", UserController.registrar);
 router.put("/:id", UserController.update);
 

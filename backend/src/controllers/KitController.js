@@ -8,7 +8,7 @@ export default class KitController {
                     departamentos: true,
                     produtos: {
                         include: {
-                            produto: true // aqui está a mágica!
+                            produto: true
                         }
                     }
                 }

@@ -6,7 +6,6 @@ const router = Router();
 
 router.use(authenticateJWT);
 router.get("/", SendController.getAll);
-router.put("/:id/status", SendController.updateBirthdayStatus);
-router.post("/disparar", SendController.triggerSends);
+router.put("/atualizar-status", SendController.updateBirthdayStatus);
 
 export default router;

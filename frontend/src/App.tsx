@@ -11,8 +11,9 @@ import { Layout } from "./components/Layout";
 import Usuarios from './pages/Usuarios';
 import Kits from './pages/Kits';
 import Aniversariantes from './pages/Aniversariantes';
-import Envios from './pages/Envios';
 import Departamentos from './pages/Departamentos';
+import Registro from './pages/Registro';
+import Inicio from './pages/Inicio';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -47,6 +48,8 @@ export default function App() {
 
       <Routes>
         <Route path="/login" element={<Auth />} />
+        <Route path="/registro" element={<Registro />} />
+
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         <Route
@@ -57,7 +60,9 @@ export default function App() {
             </PrivateRoute>
           }
         >
-          <Route index element={<Navigate to="/usuarios" />} />
+          <Route index element={<Navigate to="/inicio" />} />
+
+          <Route path="/inicio" element={<Inicio />} />
 
           <Route
             path="usuarios"
@@ -95,14 +100,6 @@ export default function App() {
             }
           />
 
-          <Route
-            path="envios"
-            element={
-              <PrivateRoute>
-                <Envios />
-              </PrivateRoute>
-            }
-          />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

@@ -25,6 +25,9 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:root@db:5432/beuni
+      JWT_SECRET=TESTE123
+      EMAIL_FROM=riccichristian338@gmail.com
+      EMAIL_PASS=iluh xbox zmmd zkte
     ports:
       - "3000:3000"
 

@@ -9,7 +9,6 @@ import {
   Users,
   Building2,
   Gift,
-  Send,
   LogOut,
 } from "lucide-react";
 
@@ -23,7 +22,6 @@ export function Layout() {
     { label: "Departamentos", to: "/departamentos", icon: <Building2 size={18} /> },
     { label: "Kits", to: "/kits", icon: <Gift size={18} /> },
     { label: "Aniversariantes", to: "/aniversariantes", icon: <Gift size={18} /> },
-    { label: "Envios", to: "/envios", icon: <Send size={18} /> },
   ];
 
   return (
